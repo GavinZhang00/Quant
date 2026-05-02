@@ -10,14 +10,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Full Kivy APK
-        uses: ArtemSBulgakov/buildozer-action@v1.2.0
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          recipe: python3,kivy
-          arch: arm64-v8a
-          title: StockFullAI
-          package: com.stock.fullai
-          version: 1.0
+          python-version: '3.10' # adjust if needed
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk python3-pip python3-setuptools python3-wheel git zip unzip
+          pip install --upgrade pip
+
+      - name: Install Buildozer and Kivy requirements
+        run: |
+          pip install buildozer cython kivy
+
+      - name: Build Full Kivy APK
+        run: |
+          buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

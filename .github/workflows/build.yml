@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
-      PATH: ${{ github.workspace }}/android-sdk/platform-tools:${{ github.workspace }}/android-sdk/build-tools/34.0.0:${{ github.workspace }}/android-sdk/cmdline-tools/latest/bin:${{ env.PATH }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,15 +34,14 @@ jobs:
           wget https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip -O cmdline-tools.zip
           unzip cmdline-tools.zip
           mv cmdline-tools latest
-          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"
           ls -l $ANDROID_SDK_ROOT/build-tools/34.0.0/aidl || (echo "::error::AIDL not found!" && exit 1)
 
       - name: Build Full Kivy APK
         run: |
-          export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}
-          export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/34.0.0
+          export PATH="$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/34.0.0:$PATH"
           buildozer -v android debug
 
       - name: Upload APK

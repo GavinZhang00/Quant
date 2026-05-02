@@ -25,6 +25,11 @@ jobs:
         run: |
           pip install buildozer cython kivy
 
+      - name: Install Android Build Tools
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "build-tools;34.0.0"
+
       - name: Build Full Kivy APK
         run: |
           buildozer -v android debug

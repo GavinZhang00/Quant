@@ -29,19 +29,43 @@ jobs:
 
       - name: Install Android SDK Command Line Tools and Build Tools
         run: |
+          # Set up environment
+          export ANDROID_SDK_ROOT="${{ github.workspace }}/android-sdk"
           mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
           cd $ANDROID_SDK_ROOT/cmdline-tools
+      
+          # Download and extract command line tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip -O cmdline-tools.zip
           unzip -q cmdline-tools.zip
           rm cmdline-tools.zip
-          # Ensure correct directory structure (Google changed it)
+      
+          # Ensure directory structure is correct for sdkmanager
           if [ -d cmdline-tools ]; then mv cmdline-tools latest; fi
+      
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-34"
-          # Extra debug: check AIDL presence
-          if [ ! -f "$ANDROID_SDK_ROOT/build-tools/33.0.2/aidl" ]; then
-            echo "::error::AIDL not found!"; exit 1
+      
+          # Accept all SDK licenses
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses || true
+      
+          # Install platform-tools and multiple build-tools versions (try several due to AIDL issues)
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "build-tools;34.0.0" "build-tools;33.0.1" "build-tools;33.0.2" "platforms;android-34"
+      
+          # Add all build-tools and platform-tools to PATH
+          export PATH="$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/34.0.0:$ANDROID_SDK_ROOT/build-tools/33.0.1:$ANDROID_SDK_ROOT/build-tools/33.0.2:$PATH"
+      
+          # Debug and check AIDL presence in all installed versions
+          for ver in 34.0.0 33.0.1 33.0.2; do
+            if [ -f "$ANDROID_SDK_ROOT/build-tools/$ver/aidl" ]; then
+              echo "AIDL found in build-tools/$ver"
+              AIDL_FOUND=1
+              break
+            fi
+          done
+      
+          if [ -z "$AIDL_FOUND" ]; then
+            echo "::error::AIDL not found in any installed build-tools version!"
+            find $ANDROID_SDK_ROOT/build-tools
+            exit 1
           fi
 
       - name: Build Full Kivy APK
